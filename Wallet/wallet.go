@@ -73,21 +73,17 @@ func NewWallet() *Wallet {
 
 func (w *Wallet) SendMoney(amount int, payeePublicKey *rsa.PublicKey) {
 	trans := transaction.NewTransaction(amount, &w.PublicKey, payeePublicKey)
-	marsh, marshErr := trans.ToString()
+	marsh, _ := trans.ToString()
 
-	if marshErr != nil {
-		panic("Can't Marshall Transaction")
-	}
-
-	bodyHash, err := rsa.SignPKCS1v15(
+	bodyHash, _ := rsa.SignPKCS1v15(
 		rand.Reader,
 		&w.PrivateKey,
 		crypto.SHA256,
 		marsh)
 
-	if err != nil {
-		panic(err)
-	}
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	Chain.GetInstance().AddBlock(trans, &w.PublicKey, *bytes.NewBuffer(bodyHash))
 }

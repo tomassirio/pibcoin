@@ -11,9 +11,15 @@ func main(){
 	bob := Wallet.NewWallet()
 	alice := Wallet.NewWallet()
 
-	satoshi.SendMoney(50, &bob.PublicKey)
-	bob.SendMoney(23, &alice.PublicKey)
-	alice.SendMoney(5, &bob.PublicKey)
+	log.Println(Chain.GetInstance().GetLastBlock().Transaction)
 
-	log.Println(Chain.GetInstance())
+	satoshi.SendMoney(50, &bob.PublicKey)
+	log.Println(Chain.GetInstance().GetLastBlock().Transaction)
+
+	bob.SendMoney(23, &alice.PublicKey)
+	log.Println(Chain.GetInstance().GetLastBlock().Transaction)
+
+	alice.SendMoney(5, &bob.PublicKey)
+	log.Println(Chain.GetInstance().GetLastBlock().Transaction)
+
 }

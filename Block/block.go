@@ -25,7 +25,7 @@ func (b *Block) GetHash() string{
 	str, _ := json.Marshal(b)
 	h := sha256.New()
 	h.Write(str)
-	sha256_hash := hex.EncodeToString(h.Sum(nil))
+	sha256Hash := hex.EncodeToString(h.Sum(nil))
 
-	return sha256_hash
+	return sha256Hash
 }

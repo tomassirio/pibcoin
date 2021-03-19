@@ -1,13 +1,15 @@
 package Wallet
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"github.com/tomassirio/pibcoin/Chain"
 	transaction "github.com/tomassirio/pibcoin/Transaction"
 	"log"
@@ -74,16 +76,23 @@ func NewWallet() *Wallet {
 func (w *Wallet) SendMoney(amount int, payeePublicKey *rsa.PublicKey) {
 	trans := transaction.NewTransaction(amount, &w.PublicKey, payeePublicKey)
 	marsh, _ := trans.ToString()
+	h := sha256.New()
+	h.Write(marsh)
 
-	bodyHash, _ := rsa.SignPKCS1v15(
-		rand.Reader,
-		&w.PrivateKey,
-		crypto.SHA256,
-		marsh)
+	bodyHash := sign(string(marsh), w.PrivateKey)
 
-	//if err != nil {
-	//	panic(err)
-	//}
+	Chain.GetInstance().AddBlock(trans, &w.PublicKey, bodyHash)
+}
 
-	Chain.GetInstance().AddBlock(trans, &w.PublicKey, *bytes.NewBuffer(bodyHash))
+func sign(plaintext string, privKey rsa.PrivateKey)  []byte {
+	// crypto/rand.Reader is a good source of entropy for blinding the RSA
+	// operation.
+	rng := rand.Reader
+	hashed := sha256.Sum256([]byte(plaintext))
+	signature, err := rsa.SignPKCS1v15(rng, &privKey, crypto.SHA256, hashed[:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error from signing: %s\n", err)
+		return []byte("Error from signing")
+	}
+	return []byte(base64.StdEncoding.EncodeToString(signature))
 }

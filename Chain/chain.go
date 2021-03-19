@@ -1,15 +1,17 @@
 package Chain
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"github.com/tomassirio/pibcoin/Block"
 	transaction "github.com/tomassirio/pibcoin/Transaction"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -68,19 +70,26 @@ func mine(nonce int) int{
 	}
 }
 
-func (c *Chain) AddBlock(t *transaction.Transaction, spk *rsa.PublicKey, sign bytes.Buffer) {
-	transMarsh, err := t.ToString()
+func (c *Chain) AddBlock(t *transaction.Transaction, spk *rsa.PublicKey, sign []byte) {
+	transMarsh, _ := t.ToString()
 
-	if err != nil {
-		panic("Can't Marshall Transaction")
-	}
+	_, valid := verify(string(sign), string(transMarsh), *spk)
 
-	errSig := rsa.VerifyPKCS1v15(spk, crypto.SHA256, transMarsh, sign.Bytes())
-
-	if errSig == nil {
+	if valid {
 		nb := Block.NewBlock(c.GetLastBlock().GetHash(), t)
 		mine(nb.Nonce)
 		*c = append(*c, nb)
 	}
 
+}
+
+func verify(signature string, plaintext string, pubkey rsa.PublicKey) (string, bool) {
+	sig, _ := base64.StdEncoding.DecodeString(signature)
+	hashed := sha256.Sum256([]byte(plaintext))
+	err := rsa.VerifyPKCS1v15(&pubkey, crypto.SHA256, hashed[:], sig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error from verification: %s\n", err)
+		return "Error from verification:", false
+	}
+	return "Signature Verification Passed", true
 }
